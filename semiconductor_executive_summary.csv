@@ -1,0 +1,10 @@
+Metric,Value,Target,Status
+On-Time Delivery Rate,0.4998666666666667,0.95,⚠
+Average Lead Time (Days),72.378,30.0,⚠
+Lead Time Variability (Days),75.42664600741922,10.0,⚠
+External Factors Impact Rate,0.6226,0.2,⚠
+Total Supply Chain Spend ($M),362.2447063,,N/A
+Average Supplier Health Score,0.3412758620689655,0.85,⚠
+Critical Parts OTD Rate,0.4876265466816648,0.98,⚠
+Inventory Turnover (Annual),1.9388442750328212,6.0,⚠
+Parts at Stockout Risk Rate,0.19,0.05,⚠

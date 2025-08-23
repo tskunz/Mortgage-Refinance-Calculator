@@ -1,0 +1,10 @@
+Part_Family,Avg_Days_Inventory,Stockout_Risk_Rate,Excess_Inventory_Rate,Total_Value,Unique_Parts
+Assembled_Kits,306.79,0.0,0.82,1732443281.41,15
+Cables,330.55,0.0,1.0,47426117.28,16
+Castings,282.59,0.0,0.84,225430484.46,16
+Consumables,37.03,0.59,0.24,196642114.61,54
+Electronics_Components,56.12,0.16,0.55,65358498.69,38
+Forgings,284.69,0.0,0.94,291457996.51,18
+Lights,340.36,0.0,0.88,120902701.06,16
+Machined_Parts,311.7,0.0,0.89,174918466.67,15
+Sheet_Metal,321.78,0.0,0.92,36957146.38,12
