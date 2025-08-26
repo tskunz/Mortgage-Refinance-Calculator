@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  mortgage-calculator:
+    build: .
+    container_name: mortgage-calculator
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+    network_mode: host
+    stdin_open: true
+    tty: true
+    
+  mortgage-web:
+    image: nginx:alpine
+    container_name: mortgage-calculator-web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./mortgage_calculator.html:/usr/share/nginx/html/index.html:ro
+    restart: unless-stopped

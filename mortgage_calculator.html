@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏠 Mortgage Refinance Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            border-bottom: 3px solid #4facfe;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .form-row label {
+            font-weight: 600;
+            color: #495057;
+            flex: 1;
+        }
+        
+        .form-row input, .form-row select {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            width: 200px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .scenario-card {
+            background: #fff;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .scenario-card.enabled {
+            border-color: #4facfe;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
+        }
+        
+        .scenario-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-header input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .scenario-header h3 {
+            color: #495057;
+            margin: 0;
+        }
+        
+        .button-group {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-left: 4px solid #4facfe;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        
+        .result-card h3 {
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .result-value {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .best-option {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-left-color: #11998e;
+        }
+        
+        .best-option h3 {
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-row label {
+                margin-bottom: 10px;
+            }
+            
+            .form-row input, .form-row select {
+                width: 100%;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 Mortgage Refinance Calculator</h1>
+            <p>Compare refinance options and find your best deal</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('current')">🏠 Current Mortgage</button>
+            <button class="tab" onclick="showTab('scenarios')">📊 Refinance Options</button>
+            <button class="tab" onclick="showTab('results')">📈 Results</button>
+        </div>
+        
+        <div id="current" class="tab-content active">
+            <h2>Current Mortgage Details</h2>
+            <div class="form-group">
+                <div class="form-row">
+                    <label>💰 Current Interest Rate (%):</label>
+                    <input type="number" id="currentRate" value="6.75" step="0.01" min="0" max="20">
+                </div>
+                <div class="form-row">
+                    <label>💵 Outstanding Balance ($):</label>
+                    <input type="number" id="currentBalance" value="450000" step="1000" min="0">
+                </div>
+                <div class="form-row">
+                    <label>📅 Monthly Payment - P&I only ($):</label>
+                    <input type="number" id="currentPayment" value="3200" step="50" min="0">
+                </div>
+                <div class="form-row">
+                    <label>📅 Loan Maturity Date:</label>
+                    <input type="date" id="maturityDate" value="">
+                </div>
+            </div>
+        </div>
+        
+        <div id="scenarios" class="tab-content">
+            <h2>Refinance Scenarios to Compare</h2>
+            <div id="scenarioContainer">
+                <!-- Scenarios will be generated by JavaScript -->
+            </div>
+        </div>
+        
+        <div id="results" class="tab-content">
+            <h2>📊 Analysis Results</h2>
+            <div id="resultsContainer">
+                <p style="text-align: center; color: #6c757d; font-size: 18px;">
+                    📊 Results will appear here after running the analysis...<br><br>
+                    💡 Fill in your mortgage details and refinance scenarios, then click "Run Analysis"!
+                </p>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="runAnalysis()">🔄 Run Analysis</button>
+            <button class="btn btn-secondary" onclick="exportResults()">📊 Export Amortization</button>
+            <button class="btn btn-secondary" onclick="showHelp()">❓ Help</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize default maturity date (25 years from today)
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const maturityDate = new Date(today.getFullYear() + 25, today.getMonth(), today.getDate());
+            document.getElementById('maturityDate').value = maturityDate.toISOString().split('T')[0];
+            
+            generateScenarios();
+        });
+        
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        // Generate scenario input forms
+        function generateScenarios() {
+            const container = document.getElementById('scenarioContainer');
+            const scenarios = [
+                {name: 'Scenario 1', rate: 6.25, term: 30, costs: 8000, points: false},
+                {name: 'Scenario 2', rate: 6.00, term: 30, costs: 8000, points: true},
+                {name: 'Scenario 3', rate: 6.50, term: 15, costs: 8000, points: false}
+            ];
+            
+            scenarios.forEach((scenario, index) => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card enabled';
+                card.innerHTML = `
+                    <div class="scenario-header">
+                        <input type="checkbox" id="enable${index}" checked onchange="toggleScenario(${index})">
+                        <h3>${scenario.name}</h3>
+                    </div>
+                    <div class="form-row">
+                        <label>📝 Name:</label>
+                        <input type="text" id="name${index}" value="${scenario.name}">
+                    </div>
+                    <div class="form-row">
+                        <label>📊 Interest Rate (%):</label>
+                        <input type="number" id="rate${index}" value="${scenario.rate}" step="0.01" min="0" max="20">
+                    </div>
+                    <div class="form-row">
+                        <label>📅 Loan Term (years):</label>
+                        <select id="term${index}">
+                            <option value="15" ${scenario.term === 15 ? 'selected' : ''}>15 years</option>
+                            <option value="20" ${scenario.term === 20 ? 'selected' : ''}>20 years</option>
+                            <option value="30" ${scenario.term === 30 ? 'selected' : ''}>30 years</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>💰 Closing Costs ($):</label>
+                        <input type="number" id="costs${index}" value="${scenario.costs}" step="500" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label>🎯 Buy down with points:</label>
+                        <input type="checkbox" id="points${index}" ${scenario.points ? 'checked' : ''} onchange="togglePoints(${index})">
+                    </div>
+                    <div class="form-row" id="pointsDetails${index}" style="display: ${scenario.points ? 'flex' : 'none'}">
+                        <label>Points (1 point = 1% of loan amount):</label>
+                        <input type="number" id="pointsAmount${index}" value="1.0" step="0.5" min="0" max="3">
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function toggleScenario(index) {
+            const card = document.querySelector(`#enable${index}`).closest('.scenario-card');
+            const isEnabled = document.getElementById(`enable${index}`).checked;
+            card.classList.toggle('enabled', isEnabled);
+        }
+        
+        function togglePoints(index) {
+            const pointsDetails = document.getElementById(`pointsDetails${index}`);
+            const isChecked = document.getElementById(`points${index}`).checked;
+            pointsDetails.style.display = isChecked ? 'flex' : 'none';
+        }
+        
+        // Calculate remaining months from maturity date
+        function getRemainingMonths() {
+            const maturityDate = new Date(document.getElementById('maturityDate').value);
+            const today = new Date();
+            
+            if (maturityDate <= today) return 0;
+            
+            const diffTime = maturityDate - today;
+            const diffMonths = Math.round(diffTime / (1000 * 60 * 60 * 24 * 30.44)); // Average month length
+            
+            return Math.max(0, diffMonths);
+        }
+        
+        // Calculate monthly payment
+        function calculateMonthlyPayment(principal, annualRate, termMonths) {
+            if (annualRate === 0) {
+                return principal / termMonths;
+            }
+            
+            const monthlyRate = annualRate / 12;
+            const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / 
+                           (Math.pow(1 + monthlyRate, termMonths) - 1);
+            
+            return payment;
+        }
+        
+        // Run mortgage analysis
+        function runAnalysis() {
+            // Validate inputs
+            if (!validateInputs()) return;
+            
+            // Get current mortgage data
+            const currentRate = parseFloat(document.getElementById('currentRate').value) / 100;
+            const currentBalance = parseFloat(document.getElementById('currentBalance').value);
+            const currentPayment = parseFloat(document.getElementById('currentPayment').value);
+            const remainingMonths = getRemainingMonths();
+            
+            // Collect enabled scenarios
+            const scenarios = [];
+            for (let i = 0; i < 3; i++) {
+                if (document.getElementById(`enable${i}`).checked) {
+                    const rate = parseFloat(document.getElementById(`rate${i}`).value) / 100;
+                    const term = parseInt(document.getElementById(`term${i}`).value);
+                    const costs = parseFloat(document.getElementById(`costs${i}`).value);
+                    const name = document.getElementById(`name${i}`).value;
+                    const usePoints = document.getElementById(`points${i}`).checked;
+                    const pointsAmount = usePoints ? parseFloat(document.getElementById(`pointsAmount${i}`).value) : 0;
+                    
+                    // Apply points discount (typical 0.25% per point)
+                    const effectiveRate = rate - (pointsAmount * 0.0025);
+                    const pointsCost = usePoints ? (currentBalance * pointsAmount * 0.01) : 0;
+                    const totalCosts = costs + pointsCost;
+                    
+                    const newPayment = calculateMonthlyPayment(currentBalance, effectiveRate, term * 12);
+                    const monthlySavings = currentPayment - newPayment;
+                    const breakEvenMonths = monthlySavings > 0 ? totalCosts / monthlySavings : Infinity;
+                    
+                    // 5-year net savings
+                    const fiveYearSavings = (monthlySavings * 60) - totalCosts;
+                    
+                    scenarios.push({
+                        name: name,
+                        rate: rate,
+                        effectiveRate: effectiveRate,
+                        newPayment: newPayment,
+                        monthlySavings: monthlySavings,
+                        totalCosts: totalCosts,
+                        pointsAmount: pointsAmount,
+                        pointsCost: pointsCost,
+                        breakEvenMonths: breakEvenMonths,
+                        fiveYearSavings: fiveYearSavings,
+                        term: term
+                    });
+                }
+            }
+            
+            displayResults(scenarios);
+            showTab('results');
+        }
+        
+        function validateInputs() {
+            const currentRate = parseFloat(document.getElementById('currentRate').value);
+            const currentBalance = parseFloat(document.getElementById('currentBalance').value);
+            const currentPayment = parseFloat(document.getElementById('currentPayment').value);
+            const remainingMonths = getRemainingMonths();
+            
+            if (currentRate <= 0 || currentRate > 20) {
+                alert('Current interest rate must be between 0.1% and 20%');
+                return false;
+            }
+            
+            if (currentBalance <= 0) {
+                alert('Outstanding balance must be greater than $0');
+                return false;
+            }
+            
+            if (currentPayment <= 0) {
+                alert('Monthly payment must be greater than $0');
+                return false;
+            }
+            
+            if (remainingMonths <= 0) {
+                alert('Maturity date must be in the future');
+                return false;
+            }
+            
+            // Check at least one scenario is enabled
+            let hasEnabledScenario = false;
+            for (let i = 0; i < 3; i++) {
+                if (document.getElementById(`enable${i}`).checked) {
+                    hasEnabledScenario = true;
+                    break;
+                }
+            }
+            
+            if (!hasEnabledScenario) {
+                alert('Please enable at least one refinance scenario');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function displayResults(scenarios) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            // Sort scenarios by 5-year savings (descending)
+            scenarios.sort((a, b) => b.fiveYearSavings - a.fiveYearSavings);
+            
+            scenarios.forEach((scenario, index) => {
+                const card = document.createElement('div');
+                card.className = index === 0 ? 'result-card best-option' : 'result-card';
+                
+                const breakEvenText = scenario.breakEvenMonths === Infinity ? 'Never' : 
+                                     `${(scenario.breakEvenMonths / 12).toFixed(1)} years`;
+                
+                const recommendation = scenario.fiveYearSavings > 0 ? 
+                    (index === 0 ? '🏆 BEST OPTION' : '✅ Recommended') : 
+                    '❌ Not recommended';
+                
+                card.innerHTML = `
+                    <h3>${index === 0 ? '🏆 ' : ''}${scenario.name}</h3>
+                    <div class="result-row">
+                        <span>💰 New Monthly Payment:</span>
+                        <span class="result-value">$${scenario.newPayment.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="result-row">
+                        <span>📉 Monthly Savings:</span>
+                        <span class="result-value">$${scenario.monthlySavings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="result-row">
+                        <span>💸 Total Upfront Costs:</span>
+                        <span class="result-value">$${scenario.totalCosts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    ${scenario.pointsAmount > 0 ? `
+                    <div class="result-row">
+                        <span>🎯 Buydown Points:</span>
+                        <span class="result-value">${scenario.pointsAmount} points ($${scenario.pointsCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</span>
+                    </div>
+                    <div class="result-row">
+                        <span>📊 Effective Rate:</span>
+                        <span class="result-value">${(scenario.effectiveRate * 100).toFixed(3)}%</span>
+                    </div>
+                    ` : `
+                    <div class="result-row">
+                        <span>📊 Interest Rate:</span>
+                        <span class="result-value">${(scenario.rate * 100).toFixed(3)}%</span>
+                    </div>
+                    `}
+                    <div class="result-row">
+                        <span>⚖️ Break-Even Time:</span>
+                        <span class="result-value">${breakEvenText}</span>
+                    </div>
+                    <div class="result-row">
+                        <span>💵 5-Year Net Savings:</span>
+                        <span class="result-value">$${scenario.fiveYearSavings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="result-row">
+                        <span>🏆 Recommendation:</span>
+                        <span class="result-value">${recommendation}</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+            
+            // Add summary
+            if (scenarios.length > 0) {
+                const summary = document.createElement('div');
+                summary.innerHTML = `
+                    <h3 style="text-align: center; margin: 30px 0 20px 0; color: #4facfe;">
+                        🎯 SUMMARY: Best 5-year value is "${scenarios[0].name}" with $${scenarios[0].fiveYearSavings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} net savings
+                    </h3>
+                `;
+                container.appendChild(summary);
+            }
+        }
+        
+        function exportResults() {
+            // For web version, we'll export to CSV format that user can copy/paste
+            if (document.getElementById('resultsContainer').children.length === 0) {
+                alert('Please run the analysis first');
+                return;
+            }
+            
+            // Simple amortization schedule export
+            const scenario = prompt('Enter scenario name to export amortization schedule for (or "current" for current mortgage):');
+            if (!scenario) return;
+            
+            generateAmortizationCSV(scenario);
+        }
+        
+        function generateAmortizationCSV(scenarioName) {
+            let principal, rate, months, payment;
+            
+            if (scenarioName.toLowerCase() === 'current') {
+                principal = parseFloat(document.getElementById('currentBalance').value);
+                rate = parseFloat(document.getElementById('currentRate').value) / 100 / 12;
+                months = getRemainingMonths();
+                payment = parseFloat(document.getElementById('currentPayment').value);
+            } else {
+                // Find the scenario (simplified - would need more robust matching)
+                alert('Amortization export for specific scenarios is available in the full Python version. This demo shows the current mortgage schedule.');
+                principal = parseFloat(document.getElementById('currentBalance').value);
+                rate = parseFloat(document.getElementById('currentRate').value) / 100 / 12;
+                months = getRemainingMonths();
+                payment = parseFloat(document.getElementById('currentPayment').value);
+            }
+            
+            // Generate CSV content
+            let csv = 'Payment_Number,Payment_Date,Beginning_Balance,Payment_Amount,Principal_Payment,Interest_Payment,Ending_Balance\n';
+            let balance = principal;
+            const today = new Date();
+            
+            for (let month = 1; month <= Math.min(months, 360); month++) {
+                const interestPayment = balance * rate;
+                let principalPayment = Math.min(payment - interestPayment, balance);
+                
+                if (balance <= principalPayment) {
+                    principalPayment = balance;
+                    payment = principalPayment + interestPayment;
+                    balance = 0;
+                } else {
+                    balance -= principalPayment;
+                }
+                
+                const paymentDate = new Date(today.getFullYear(), today.getMonth() + month, today.getDate());
+                
+                csv += `${month},${paymentDate.toISOString().split('T')[0]},${(balance + principalPayment).toFixed(2)},${payment.toFixed(2)},${principalPayment.toFixed(2)},${interestPayment.toFixed(2)},${balance.toFixed(2)}\n`;
+                
+                if (balance <= 0) break;
+            }
+            
+            // Create downloadable file
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `amortization_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function showHelp() {
+            alert(`🏠 MORTGAGE REFINANCE CALCULATOR HELP
+
+This calculator helps you determine if refinancing makes financial sense:
+
+📊 HOW TO USE:
+1. Enter your current mortgage details in the first tab
+2. Set up refinance scenarios to compare in the second tab
+3. Click "Run Analysis" to see results
+
+💰 KEY FEATURES:
+• Break-even analysis - when you recover closing costs
+• Multiple scenario comparison
+• Buydown points analysis 
+• 5-year net savings calculation
+
+🎯 BUYDOWN POINTS:
+Check "Buy down with points" to analyze paying upfront to reduce your rate.
+Typical: 1 point = 1% of loan amount, reduces rate by 0.25%
+
+💡 TIPS:
+• Use realistic rates from actual lender quotes
+• Consider how long you'll stay in the home
+• Factor in your risk tolerance and financial goals
+
+For the full-featured version with market data and advanced exports, 
+use the Python desktop application.`);
+        }
+    </script>
+</body>
+</html>
