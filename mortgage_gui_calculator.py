@@ -10,6 +10,9 @@ import pandas as pd
 from datetime import datetime, date
 import threading
 import os
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.ticker as ticker
 
 # Try to import tkcalendar, fallback to text entry if not available
 try:
@@ -20,7 +23,7 @@ except ImportError:
 
 # Import our enhanced calculator
 from mortgage_enhanced_calculator import EnhancedMortgageCalculator
-from mortgage_refinance_calculator import MortgageDetails, RefinanceOptions
+from mortgage_refinance_calculator import MortgageDetails, RefinanceOptions, RecastOptions
 
 class MortgageGUI:
     """GUI interface for mortgage refinance calculator"""
@@ -43,8 +46,16 @@ class MortgageGUI:
         default_maturity = datetime.now().date().replace(year=datetime.now().year + 25)
         self.maturity_date = tk.StringVar(value=default_maturity.strftime("%Y-%m-%d"))
         
+        self.current_extra_monthly = tk.DoubleVar(value=0.0)
+        self.current_extra_one_time = tk.DoubleVar(value=0.0)
+        
         self.include_market_data = tk.BooleanVar(value=True)
         self.export_results = tk.BooleanVar(value=True)
+        
+        # Recast variables
+        self.recast_enabled = tk.BooleanVar(value=False)
+        self.recast_lump_sum = tk.DoubleVar(value=50000)
+        self.recast_fee = tk.DoubleVar(value=250)
         
         # Scenario variables (for up to 5 scenarios)
         self.scenario_vars = []
@@ -57,9 +68,14 @@ class MortgageGUI:
                 'closing_costs': tk.DoubleVar(value=8000),
                 'use_points': tk.BooleanVar(value=i == 1),
                 'points': tk.DoubleVar(value=1.0),
-                'point_reduction': tk.DoubleVar(value=0.25)
+                'point_reduction': tk.DoubleVar(value=0.25),
+                'extra_monthly': tk.DoubleVar(value=0.0),
+                'extra_one_time': tk.DoubleVar(value=0.0)
             }
             self.scenario_vars.append(scenario)
+        
+        self.recast_extra_monthly = tk.DoubleVar(value=0.0)
+        self.recast_extra_one_time = tk.DoubleVar(value=0.0)
         
         self.create_widgets()
         
@@ -105,6 +121,11 @@ class MortgageGUI:
         notebook.add(scenarios_frame, text="Refinance Scenarios")
         self.create_scenarios_tab(scenarios_frame)
         
+        # Tab 2.5: Recast Options
+        recast_frame = ttk.Frame(notebook)
+        notebook.add(recast_frame, text="Recast Options")
+        self.create_recast_tab(recast_frame)
+        
         # Tab 3: Analysis Options
         options_frame = ttk.Frame(notebook)
         notebook.add(options_frame, text="Analysis Options")
@@ -114,6 +135,11 @@ class MortgageGUI:
         results_frame = ttk.Frame(notebook)
         notebook.add(results_frame, text="Results")
         self.create_results_tab(results_frame)
+        
+        # Tab 5: Visualizations
+        viz_frame = ttk.Frame(notebook)
+        notebook.add(viz_frame, text="Visualizations")
+        self.create_viz_tab(viz_frame)
         
         # Bottom frame for main buttons
         button_frame = ttk.Frame(self.root)
@@ -191,6 +217,16 @@ class MortgageGUI:
             date_entry = ttk.Entry(maturity_frame, textvariable=self.maturity_date, width=15)
             date_entry.pack(side='right')
             ttk.Label(maturity_frame, text="(YYYY-MM-DD)", foreground='gray').pack(side='right', padx=(0, 5))
+            
+        # Extra Payments
+        extra_frame = ttk.LabelFrame(main_frame, text="Extra Payments (Optional)")
+        extra_frame.pack(fill='x', pady=15)
+        
+        ttk.Label(extra_frame, text="Extra Monthly Payment ($):").grid(row=0, column=0, sticky='w', pady=5, padx=10)
+        ttk.Entry(extra_frame, textvariable=self.current_extra_monthly, width=15).grid(row=0, column=1, padx=10)
+        
+        ttk.Label(extra_frame, text="One-Time Extra Payment (Month 1):").grid(row=1, column=0, sticky='w', pady=5, padx=10)
+        ttk.Entry(extra_frame, textvariable=self.current_extra_one_time, width=15).grid(row=1, column=1, padx=10)
     
     def create_scenarios_tab(self, parent):
         """Create refinance scenarios input tab"""
@@ -254,7 +290,51 @@ class MortgageGUI:
         ttk.Label(points_frame, text="points @").pack(side='left')
         ttk.Entry(points_frame, textvariable=scenario_vars['point_reduction'], width=8).pack(side='left', padx=5)
         ttk.Label(points_frame, text="% reduction").pack(side='left')
+        
+        # Row 4: Extra Payments
+        extra_frame = ttk.Frame(form_frame)
+        extra_frame.grid(row=3, column=0, columnspan=4, sticky='w', pady=5)
+        ttk.Label(extra_frame, text="Extra Monthly ($):").pack(side='left')
+        ttk.Entry(extra_frame, textvariable=scenario_vars['extra_monthly'], width=8).pack(side='left', padx=(5, 15))
+        ttk.Label(extra_frame, text="Extra One-Time ($):").pack(side='left')
+        ttk.Entry(extra_frame, textvariable=scenario_vars['extra_one_time'], width=8).pack(side='left', padx=5)
     
+    def create_recast_tab(self, parent):
+        """Create recast scenario input tab"""
+        main_frame = ttk.Frame(parent)
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        ttk.Label(main_frame, text="💵 Mortgage Recast Options", 
+                 font=('Arial', 14, 'bold')).pack(anchor='w', pady=(0, 15))
+                 
+        form_frame = ttk.LabelFrame(main_frame, text="Recast Scenario")
+        form_frame.pack(fill='x', pady=10, padx=5)
+
+        ttk.Checkbutton(form_frame, text="Include Recast Scenario", 
+                       variable=self.recast_enabled).pack(anchor='w', padx=10, pady=10)
+        
+        lump_frame = ttk.Frame(form_frame)
+        lump_frame.pack(fill='x', padx=10, pady=5)
+        ttk.Label(lump_frame, text="Lump Sum Payment ($):").pack(side='left', anchor='w')
+        ttk.Entry(lump_frame, textvariable=self.recast_lump_sum, width=15).pack(side='left', padx=10)
+        
+        fee_frame = ttk.Frame(form_frame)
+        fee_frame.pack(fill='x', padx=10, pady=5)
+        ttk.Label(fee_frame, text="Recast Fee ($):").pack(side='left', anchor='w')
+        ttk.Entry(fee_frame, textvariable=self.recast_fee, width=15).pack(side='left', padx=10)
+        
+        extra_frame = ttk.Frame(form_frame)
+        extra_frame.pack(fill='x', padx=10, pady=5)
+        ttk.Label(extra_frame, text="Extra Monthly ($):").pack(side='left', anchor='w')
+        ttk.Entry(extra_frame, textvariable=self.recast_extra_monthly, width=11).pack(side='left', padx=(5,10))
+        ttk.Label(extra_frame, text="Extra One-Time ($):").pack(side='left', anchor='w')
+        ttk.Entry(extra_frame, textvariable=self.recast_extra_one_time, width=11).pack(side='left', padx=5)
+        
+        info_text = "A mortgage recast is when you make a lump-sum payment toward the principal balance\n" \
+                    "of your loan, and the lender recalculates your monthly payments based on the new, lower balance.\n" \
+                    "Your interest rate and term remain exactly the same."
+        ttk.Label(form_frame, text=info_text, foreground='gray').pack(anchor='w', padx=10, pady=(10, 10))
+
     def create_options_tab(self, parent):
         """Create analysis options tab"""
         main_frame = ttk.Frame(parent)
@@ -299,6 +379,20 @@ class MortgageGUI:
         self.results_text.insert(tk.END, "📊 Results will appear here after running the analysis...\n\n")
         self.results_text.insert(tk.END, "💡 Click 'Run Analysis' to get started!")
         self.results_text.config(state=tk.DISABLED)
+        
+    def create_viz_tab(self, parent):
+        """Create visual charts tab"""
+        self.viz_frame = ttk.Frame(parent)
+        self.viz_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        ttk.Label(self.viz_frame, text="📈 Amortization Schedule Comparison", font=('Arial', 14, 'bold')).pack(anchor='w', pady=(0,10))
+        
+        # Ensure matplotlib doesn't crash on high DPI
+        self.figure = plt.Figure(figsize=(8, 5), dpi=100)
+        self.ax = self.figure.add_subplot(111)
+        
+        self.canvas = FigureCanvasTkAgg(self.figure, self.viz_frame)
+        self.canvas_widget = self.canvas.get_tk_widget()
+        self.canvas_widget.pack(fill='both', expand=True)
     
     def run_analysis(self):
         """Run the mortgage refinance analysis"""
@@ -324,7 +418,9 @@ class MortgageGUI:
                         rate=self.current_rate.get() / 100,
                         balance=self.current_balance.get(),
                         payment=self.current_payment.get(),
-                        remaining_months=self.get_remaining_months()
+                        remaining_months=self.get_remaining_months(),
+                        extra_monthly_payment=self.current_extra_monthly.get(),
+                        extra_one_time_payment=self.current_extra_one_time.get()
                     )
                     
                     # Create scenarios
@@ -339,17 +435,38 @@ class MortgageGUI:
                                 new_term_months=scenario_vars['term_years'].get() * 12,
                                 closing_costs=scenario_vars['closing_costs'].get(),
                                 buydown_points=buydown_points,
-                                rate_reduction_per_point=rate_reduction
+                                rate_reduction_per_point=rate_reduction,
+                                extra_monthly_payment=scenario_vars['extra_monthly'].get(),
+                                extra_one_time_payment=scenario_vars['extra_one_time'].get()
                             )
                             
                             scenarios.append((scenario_vars['name'].get(), refi_option))
                     
                     # Run enhanced analysis
-                    self.results_df = self.calculator.enhanced_refinance_analysis(
-                        current_mortgage, 
-                        scenarios, 
-                        include_market_rates=self.include_market_data.get()
-                    )
+                    if scenarios:
+                        self.results_df = self.calculator.enhanced_refinance_analysis(
+                            current_mortgage, 
+                            scenarios, 
+                            include_market_rates=self.include_market_data.get()
+                        )
+                    else:
+                        self.results_df = pd.DataFrame()
+                        
+                    # Add Recast Scenario
+                    if self.recast_enabled.get():
+                        recast_opts = RecastOptions(
+                            lump_sum_payment=self.recast_lump_sum.get(),
+                            recast_fee=self.recast_fee.get(),
+                            extra_monthly_payment=self.recast_extra_monthly.get(),
+                            extra_one_time_payment=self.recast_extra_one_time.get()
+                        )
+                        recast_res = self.calculator.calculator.analyze_recast(current_mortgage, recast_opts)
+                        recast_res['custom_scenario_name'] = "Recast Scenario"
+                        recast_df = pd.DataFrame([recast_res])
+                        if self.results_df.empty:
+                            self.results_df = recast_df
+                        else:
+                            self.results_df = pd.concat([self.results_df, recast_df], ignore_index=True)
                     
                     # Update UI with results
                     self.root.after(0, self.display_results)
@@ -370,6 +487,8 @@ class MortgageGUI:
         self.results_text.config(state=tk.NORMAL)
         self.results_text.delete(1.0, tk.END)
         
+        self.plot_amortization_graphs()
+        
         # Market analysis (if available)
         if hasattr(self.calculator, 'market_timing') and self.calculator.market_timing:
             market_report = self.calculator.generate_market_report()
@@ -383,9 +502,19 @@ class MortgageGUI:
         for i, (_, row) in enumerate(self.results_df.iterrows(), 1):
             self.results_text.insert(tk.END, f"{i}. 📋 {row['custom_scenario_name']}\n")
             self.results_text.insert(tk.END, "   " + "-"*40 + "\n")
-            self.results_text.insert(tk.END, f"   💰 New Monthly Payment: ${row['new_monthly_payment']:,.2f}\n")
-            self.results_text.insert(tk.END, f"   📉 Monthly Savings: ${row['monthly_savings']:,.2f}\n")
-            self.results_text.insert(tk.END, f"   💸 Total Upfront Costs: ${row['total_upfront_cost']:,.2f}\n")
+            
+            # Format differences for Recast vs Refi
+            if "Recast" in row['custom_scenario_name']:
+                self.results_text.insert(tk.END, f"   💰 New Monthly Payment: ${row['new_monthly_payment']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   📉 Monthly Payment Drop: ${row['monthly_savings']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   💸 Lump Sum Payment: ${row['lump_sum_payment']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   💳 Recast Fee: ${row['recast_fee']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   📉 Total Interest Saved: ${row['interest_savings_full_term']:,.2f}\n")
+            else:
+                self.results_text.insert(tk.END, f"   💰 New Monthly Payment: ${row['new_monthly_payment']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   📉 Monthly Savings: ${row['monthly_savings']:,.2f}\n")
+                self.results_text.insert(tk.END, f"   💸 Total Upfront Costs: ${row['total_upfront_cost']:,.2f}\n")
+
             
             if row['buydown_points'] > 0:
                 self.results_text.insert(tk.END, f"   🎯 Buydown Points: {row['buydown_points']} (${row['buydown_cost']:,.2f})\n")
@@ -421,6 +550,47 @@ class MortgageGUI:
         # Auto-export if enabled
         if self.export_results.get():
             self.export_results_files()
+            
+    def plot_amortization_graphs(self):
+        """Draw the amortization comparison in the visualizer tab"""
+        if not hasattr(self, 'ax') or self.results_df is None or self.results_df.empty:
+            return
+            
+        self.ax.clear()
+        
+        try:
+            first_row = self.results_df.iloc[0]
+            if 'schedule_current' in first_row:
+                curr_sched = first_row['schedule_current']
+                if curr_sched:
+                    x_curr = [item['month']/12.0 for item in curr_sched]
+                    y_curr = [item['balance'] for item in curr_sched]
+                    self.ax.plot(x_curr, y_curr, label='Current Mortgage', color='black', linewidth=2.5, linestyle='--')
+            
+            colors = plt.cm.tab10.colors
+            color_idx = 0
+            for i, (_, row) in enumerate(self.results_df.iterrows()):
+                if 'schedule_new' in row:
+                    new_sched = row['schedule_new']
+                    if new_sched:
+                        name = row.get('custom_scenario_name', f'Scenario {i+1}')
+                        x_new = [item['month']/12.0 for item in new_sched]
+                        y_new = [item['balance'] for item in new_sched]
+                        self.ax.plot(x_new, y_new, label=name, color=colors[color_idx % len(colors)], linewidth=1.5)
+                        color_idx += 1
+                        
+            self.ax.set_xlabel('Years from Now')
+            self.ax.set_ylabel('Remaining Balance ($)')
+            self.ax.set_title('Loan Paydown Trajectories')
+            self.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
+            self.ax.legend()
+            self.ax.grid(True, linestyle=':', alpha=0.6)
+            
+            self.figure.tight_layout()
+            self.canvas.draw()
+            
+        except Exception as e:
+            print(f"Failed to draw graph: {e}")
     
     def validate_inputs(self):
         """Validate user inputs"""
@@ -444,8 +614,8 @@ class MortgageGUI:
             
             # Check that at least one scenario is enabled
             enabled_scenarios = sum(1 for sv in self.scenario_vars if sv['enabled'].get())
-            if enabled_scenarios == 0:
-                messagebox.showerror("Invalid Input", "Please enable at least one refinance scenario")
+            if enabled_scenarios == 0 and not self.recast_enabled.get():
+                messagebox.showerror("Invalid Input", "Please enable at least one refinance or recast scenario")
                 return False
             
             return True
